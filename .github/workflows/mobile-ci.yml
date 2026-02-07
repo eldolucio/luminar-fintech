@@ -1,0 +1,144 @@
+# Mobile CI/CD Pipeline - Senior FinTech (Flutter)
+# Executa análise, testes e build em cada push
+
+name: Mobile CI
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'mobile/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'mobile/**'
+
+jobs:
+  analyze:
+    name: 🔍 Análise de Código
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: ./mobile
+
+    steps:
+      - name: 📥 Checkout do código
+        uses: actions/checkout@v4
+
+      - name: 🎯 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.16.0'
+          channel: 'stable'
+          cache: true
+
+      - name: 📦 Instalar dependências
+        run: flutter pub get
+
+      - name: 🔍 Análise estática (Lint)
+        run: flutter analyze --no-fatal-infos
+
+      - name: 📐 Verificar formatação
+        run: dart format --set-exit-if-changed lib/
+
+  test:
+    name: 🧪 Testes Unitários
+    runs-on: ubuntu-latest
+    needs: analyze
+    
+    defaults:
+      run:
+        working-directory: ./mobile
+
+    steps:
+      - name: 📥 Checkout do código
+        uses: actions/checkout@v4
+
+      - name: 🎯 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.16.0'
+          channel: 'stable'
+          cache: true
+
+      - name: 📦 Instalar dependências
+        run: flutter pub get
+
+      - name: ✅ Executar testes unitários
+        run: flutter test --coverage
+
+      - name: 📊 Upload cobertura de código
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./mobile/coverage/lcov.info
+          fail_ci_if_error: false
+
+  build-android:
+    name: 🤖 Build Android
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    
+    defaults:
+      run:
+        working-directory: ./mobile
+
+    steps:
+      - name: 📥 Checkout do código
+        uses: actions/checkout@v4
+
+      - name: ☕ Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: 🎯 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.16.0'
+          channel: 'stable'
+          cache: true
+
+      - name: 📦 Instalar dependências
+        run: flutter pub get
+
+      - name: 🔨 Build APK (Release)
+        run: flutter build apk --release --obfuscate --split-debug-info=build/debug-info
+
+      - name: 📤 Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-release-apk
+          path: mobile/build/app/outputs/flutter-apk/app-release.apk
+
+  build-ios:
+    name: 🍎 Build iOS
+    runs-on: macos-latest
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    
+    defaults:
+      run:
+        working-directory: ./mobile
+
+    steps:
+      - name: 📥 Checkout do código
+        uses: actions/checkout@v4
+
+      - name: 🎯 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.16.0'
+          channel: 'stable'
+          cache: true
+
+      - name: 📦 Instalar dependências
+        run: flutter pub get
+
+      - name: 🔨 Build iOS (No Codesign)
+        run: flutter build ios --release --no-codesign
+
+      - name: 📝 Relatório de build
+        run: echo "Build iOS concluído com sucesso!"

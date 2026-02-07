@@ -1,0 +1,37 @@
+# Dependências
+node_modules/
+.dart_tool/
+.packages
+build/
+
+# Arquivos de ambiente
+.env
+.env.local
+*.env
+
+# Logs
+*.log
+server.log
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Gerados
+dist/
+coverage/
+*.lcov
+
+# iOS
+mobile/ios/Pods/
+mobile/ios/.symlinks/
+
+# Android
+mobile/android/.gradle/
+mobile/android/app/build/
+*.apk
+*.aab
+
+# MacOS
+.DS_Store

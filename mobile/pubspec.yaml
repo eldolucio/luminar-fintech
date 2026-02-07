@@ -1,0 +1,37 @@
+name: fintech_app
+description: A premium personal finance app with Open Finance integration.
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_bloc: ^8.1.3         # Gerenciamento de estado previsível
+  get_it: ^7.6.4               # Injeção de dependência
+  dio: ^5.3.3                  # Cliente HTTP robusto
+  fpdart: ^1.1.0               # Programação funcional (Either, Option)
+  intl: ^0.18.1                # Internacionalização e moedas
+  google_fonts: ^6.1.0         # Tipografia moderna
+  fl_chart: ^0.65.0            # Gráficos de alta performance
+  local_auth: ^2.1.6           # Biometria (FaceID/TouchID)
+  flutter_secure_storage: ^9.0.0 # Armazenamento seguro de tokens
+  cupertino_icons: ^1.0.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  mocktail: ^1.0.1
+  bloc_test: ^9.1.5
+  integration_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
+  fonts:
+    - family: Outfit
+      fonts:
+        - asset: assets/fonts/Outfit-Regular.ttf
+        - asset: assets/fonts/Outfit-Bold.ttf
+          weight: 700

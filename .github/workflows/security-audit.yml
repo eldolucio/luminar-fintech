@@ -1,0 +1,120 @@
+# Security Audit Pipeline - Senior FinTech
+# Executa verificações de segurança semanalmente e em PRs
+
+name: Security Audit
+
+on:
+  schedule:
+    - cron: '0 3 * * 1' # Segunda-feira às 3h
+  pull_request:
+    branches: [main]
+  workflow_dispatch: # Permite execução manual
+
+jobs:
+  dependency-check:
+    name: 🛡️ Verificação de Dependências
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout do código
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 🔍 Auditoria Backend
+        working-directory: ./backend
+        run: |
+          npm ci
+          npm audit --audit-level=moderate || true
+          
+      - name: 🎯 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.16.0'
+          channel: 'stable'
+
+      - name: 🔍 Verificar dependências Flutter
+        working-directory: ./mobile
+        run: |
+          flutter pub get
+          flutter pub outdated
+
+  secrets-scan:
+    name: 🔐 Scan de Secrets
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout do código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🔎 Detectar secrets vazados
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --only-verified
+
+  code-quality:
+    name: 📊 Qualidade de Código
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout do código
+        uses: actions/checkout@v4
+
+      - name: 🔍 Análise CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript, typescript
+
+      - name: 🔨 Build para análise
+        run: |
+          cd backend && npm ci
+
+      - name: 📊 Executar análise CodeQL
+        uses: github/codeql-action/analyze@v3
+
+  compliance-check:
+    name: 📋 Verificação de Conformidade
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout do código
+        uses: actions/checkout@v4
+
+      - name: 📋 Verificar documentação de segurança
+        run: |
+          echo "Verificando arquivos de conformidade..."
+          
+          if [ -f "SECURITY_AUDIT.md" ]; then
+            echo "✅ SECURITY_AUDIT.md encontrado"
+          else
+            echo "❌ SECURITY_AUDIT.md não encontrado"
+            exit 1
+          fi
+          
+          if [ -f "SPECIFICATION.md" ]; then
+            echo "✅ SPECIFICATION.md encontrado"
+          else
+            echo "❌ SPECIFICATION.md não encontrado"
+            exit 1
+          fi
+
+      - name: 🏷️ Criar issue de revisão
+        if: github.event_name == 'schedule'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🔒 Revisão Semanal de Segurança',
+              body: `## Auditoria Automática de Segurança\n\nData: ${new Date().toISOString().split('T')[0]}\n\n### Checklist:\n- [ ] Revisar dependências desatualizadas\n- [ ] Verificar logs de vulnerabilidades\n- [ ] Atualizar certificados se necessário\n- [ ] Revisar permissões de acesso`,
+              labels: ['security', 'audit']
+            })
